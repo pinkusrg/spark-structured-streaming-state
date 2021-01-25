@@ -7,5 +7,6 @@
 /modules/*/target
 /src/main/resources/checkpoints
 /src/main/resources/c1
+/.bsp
 *.xml
 *.cache
