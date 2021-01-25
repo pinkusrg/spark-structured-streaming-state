@@ -6,5 +6,6 @@
 /target
 /modules/*/target
 /src/main/resources/checkpoints
+/src/main/resources/c1
 *.xml
 *.cache
