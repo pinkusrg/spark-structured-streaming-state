@@ -1,7 +1,7 @@
 import Example.WordCount
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.{DataFrame, Encoder, Encoders, SparkSession}
-import org.apache.spark.sql.functions.{col, expr}
+import org.apache.spark.sql.functions.{col, expr, struct, to_json}
 import org.apache.spark.sql.streaming.{GroupStateTimeout, OutputMode}
 
 object FruitCount {
@@ -25,27 +25,36 @@ object FruitCount {
 
 
   def readAndWriteToKafka() = {
-    // https://spark.apache.org/docs/latest/structured-streaming-kafka-integration.html
     val kafkaDF: DataFrame = spark.readStream
       .format("kafka")
       .option("kafka.bootstrap.servers", "localhost:9092")
       .option("subscribe", "fruit")
       .load()
 
-    kafkaDF
+    val kDf = kafkaDF
       .select(col("topic"), expr("cast(value as string) as value"))
       .as[Fruit]
       .groupByKey(r => r.value)
       .flatMapGroupsWithState[Set[FruitCountState],Fruit](
         outputMode = OutputMode.Append(), timeoutConf = GroupStateTimeout.ProcessingTimeTimeout()
       )(StateHelper.fruitMappingFunction)
-      .writeStream
-      .format("kafka")
-      .option("kafka.bootstrap.servers", "localhost:9092")
-      .option("topic", "sink-fruit")
-      .option("checkpointLocation", "src/main/resources/c1") // without checkpoints the writing to Kafka will fail
-      .start()
-      .awaitTermination()
+
+//      kDf.select(to_json(struct($"topic",$"value")).alias("value")).writeStream
+//        .outputMode(OutputMode.Append())
+//        .format("console")
+//        .start()
+//        .awaitTermination()
+
+      kDf
+        .select(to_json(struct($"topic",$"value")).alias("value"))
+        .writeStream
+        .outputMode(OutputMode.Append())
+        .format("kafka")
+        .option("kafka.bootstrap.servers", "localhost:9092")
+        .option("topic", "tree")
+        .option("checkpointLocation", "src/main/resources/c1")
+        .start()
+        .awaitTermination()
   }
 
   def main(args: Array[String]): Unit = {

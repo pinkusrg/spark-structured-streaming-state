@@ -12,14 +12,14 @@ object Example {
 
   val checkpointLocation = "file:///home/knoldus/Documents/c1"
 
-  val spark = SparkSession.builder()
+  val spark: SparkSession = SparkSession.builder()
     .appName("Streaming Aggregations")
     .master("local[2]")
     .getOrCreate()
 
   spark.sparkContext.setCheckpointDir(checkpointLocation)
 
-  def streamingCount() = {
+  def streamingCount(): Unit = {
     val lines: DataFrame = spark.readStream
       .format("socket")
       .option("host", "localhost")
@@ -38,14 +38,12 @@ object Example {
       .awaitTermination()
   }
 
-  def wordCount() = {
+  def wordCount(): Unit = {
     val lines: DataFrame = spark.readStream
       .format("socket")
       .option("host", "localhost")
       .option("port", 12345)
       .load()
-
-
 
     import spark.implicits._
     implicit val enc: Encoder[WordCount] = Encoders.product[WordCount]
@@ -62,11 +60,11 @@ object Example {
         outputMode = OutputMode.Append(), timeoutConf = GroupStateTimeout.ProcessingTimeTimeout()
       )(MappingFunction)
       .writeStream
-      .format("json")
-      .option("path", "file:///home/knoldus/Documents/spark_output")
-//      .format("console")
-      .option("checkpointLocation",checkpointLocation)
-      .outputMode(OutputMode.Append())
+//      .format("json")
+//      .option("path", "file:///home/knoldus/Documents/spark_output")
+      .format("console")
+//      .option("checkpointLocation",checkpointLocation)
+//      .outputMode(OutputMode.Append())
       //      .outputMode("append") // append and update not supported on aggregations without watermark
       .start()
       .awaitTermination()

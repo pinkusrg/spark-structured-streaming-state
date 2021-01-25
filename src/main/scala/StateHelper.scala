@@ -37,15 +37,16 @@ object StateHelper {
     if(state.hasTimedOut){
       println("State Timed out")
       state.remove()
-//      state.getOption.getOrElse(Seq.empty[WordCountState])
       values
     }else {
+      val incomingValues = values.toSeq
       val currentState = state.getOption
       val updatedState = currentState match {
         case Some(s) =>
           println("Printing existing state...")
           state.get.foreach(println(_))
-          val countValue: Long = values.size
+          val countValue: Long = incomingValues.size
+          println("Value size "+countValue)
           val newStateValue: Set[FruitCountState] = state.get.map{ s =>
             if(s.fruit == key){
               s.copy(count = s.count + countValue)
@@ -55,12 +56,11 @@ object StateHelper {
           newStateValue
         case _ =>
           println("No state")
-          Set(FruitCountState(key,values.size))
+          Set(FruitCountState(key,incomingValues.size))
       }
       state.update(updatedState)
       state.setTimeoutDuration("5 minute")
-//      updatedState.toIterator
-      values
+      incomingValues.toIterator
     }
   }
 }
